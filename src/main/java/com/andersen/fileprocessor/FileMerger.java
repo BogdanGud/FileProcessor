@@ -4,42 +4,44 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
-public class FileMerger {
+class FileMerger {
     private final static Charset ENCODING = StandardCharsets.UTF_8;
-    private List<String> strings = new ArrayList<>();
 
-    public void mergeFile(String[] args) {
+    void mergeFile(String[] args) {
         Path pathFile1 = Paths.get(args[0]);
         Path pathFile2 = Paths.get(args[1]);
         Path output = Paths.get(args[2]);
-        try {
-            BufferedReader reader1 = Files.newBufferedReader(pathFile1, ENCODING);
-            BufferedReader reader2 = Files.newBufferedReader(pathFile2, ENCODING);
-            String line = null;
-            String line2 = null;
+        try (
+                BufferedReader reader1 = Files.newBufferedReader(pathFile1, ENCODING);
+                BufferedReader reader2 = Files.newBufferedReader(pathFile2, ENCODING);
+                BufferedWriter writer = Files.newBufferedWriter(output, ENCODING)) {
 
-            while ((line = reader1.readLine()) != null && (line2 = reader2.readLine()) != null) {
-                strings.add(line);
-                strings.add(line2);
-            }
+            String line;
+            String line2;
+
+            do {
+                line = reader1.readLine();
+                if (line != null) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+                line2 = reader2.readLine();
+                if (line2 != null) {
+                    writer.write(line2);
+                    writer.newLine();
+                }
+
+            } while ((line != null) || (line2 != null));
+
+        } catch (NoSuchFileException ex) {
+            System.out.println("NoSuchFileException caught: " + ex);
         } catch (IOException e) {
             e.printStackTrace();
-        }
-
-        System.out.println(strings.toString());
-
-        try (BufferedWriter writer = Files.newBufferedWriter(output, ENCODING)) {
-            for (String line : strings) {
-                writer.write(line.toString());
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("IOException caught: " + e);
         }
     }
 }
